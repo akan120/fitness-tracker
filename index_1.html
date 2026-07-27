@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Standard — Daily Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#0d1b2a;
+    --paper:#f2efe6;
+    --card:#fbfaf5;
+    --line:#1b2a3a;
+    --blue:#12467a;
+    --blue-bright:#1f6feb;
+    --gold:#c99b3f;
+    --dim:#5c6773;
+    --done:#12467a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  body{max-width:680px;margin:0 auto;padding:22px 18px 80px;}
+
+  /* Masthead */
+  .mast{border-bottom:3px solid var(--line);padding-bottom:14px;margin-bottom:4px;}
+  .kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;align-items:center;}
+  .kicker .day{color:var(--blue);font-weight:600;}
+  h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(38px,11vw,60px);line-height:.92;letter-spacing:-.02em;margin:8px 0 2px;}
+  h1 em{font-style:italic;color:var(--gold);}
+  .date{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;}
+
+  /* Streak strip */
+  .strip{display:grid;grid-template-columns:1fr 1fr 1fr;border:2px solid var(--line);margin-top:16px;background:var(--card);}
+  .strip .cell{padding:12px 10px;text-align:center;border-right:1px solid var(--line);}
+  .strip .cell:last-child{border-right:none;}
+  .strip .num{font-family:'Fraunces',serif;font-weight:900;font-size:30px;line-height:1;color:var(--blue);}
+  .strip .lbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:5px;}
+
+  /* Progress bar */
+  .prog-wrap{margin:18px 0 6px;}
+  .prog-top{display:flex;justify-content:space-between;align-items:baseline;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:7px;}
+  .prog-top b{color:var(--ink);font-size:13px;}
+  .prog{height:10px;border:1.5px solid var(--line);background:var(--paper);position:relative;overflow:hidden;}
+  .prog span{position:absolute;left:0;top:0;bottom:0;background:var(--blue);width:0;transition:width .45s cubic-bezier(.2,.8,.2,1);}
+  .prog span::after{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(255,255,255,.18) 6px,rgba(255,255,255,.18) 12px);}
+
+  /* Section label */
+  .sec{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin:26px 0 10px;display:flex;align-items:center;gap:10px;}
+  .sec::after{content:"";flex:1;height:1px;background:var(--line);opacity:.35;}
+
+  /* Task */
+  .task{display:flex;align-items:flex-start;gap:14px;background:var(--card);border:1.5px solid var(--line);padding:15px 16px;margin-bottom:9px;cursor:pointer;transition:background .15s,transform .08s;position:relative;}
+  .task:active{transform:scale(.994);}
+  .task .box{flex:none;width:26px;height:26px;border:2px solid var(--line);border-radius:2px;display:grid;place-items:center;margin-top:1px;transition:background .18s,border-color .18s;}
+  .task .box svg{width:16px;height:16px;stroke:var(--paper);stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.4);transition:opacity .18s,transform .18s;}
+  .task .body{flex:1;min-width:0;}
+  .task .t{font-weight:600;font-size:15.5px;line-height:1.25;}
+  .task .d{font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.35;}
+  .task .tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-top:6px;display:inline-block;}
+  .task.done{background:linear-gradient(var(--card),var(--card));border-color:var(--blue);}
+  .task.done .box{background:var(--done);border-color:var(--done);}
+  .task.done .box svg{opacity:1;transform:scale(1);}
+  .task.done .t{color:var(--dim);text-decoration:line-through;text-decoration-color:var(--gold);text-decoration-thickness:2px;}
+
+  /* Water counter */
+  .water{background:var(--card);border:1.5px solid var(--line);padding:15px 16px;margin-bottom:9px;}
+  .water .wtop{display:flex;justify-content:space-between;align-items:center;}
+  .water .t{font-weight:600;font-size:15.5px;}
+  .water .count{font-family:'Fraunces',serif;font-weight:900;font-size:22px;color:var(--blue);}
+  .water .cups{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+  .water .cup{flex:1;min-width:26px;height:34px;border:2px solid var(--line);border-radius:0 0 4px 4px;background:var(--paper);cursor:pointer;position:relative;overflow:hidden;transition:transform .08s;}
+  .water .cup:active{transform:scale(.92);}
+  .water .cup.full::after{content:"";position:absolute;left:0;right:0;bottom:0;height:100%;background:var(--blue-bright);animation:fill .3s ease;}
+  @keyframes fill{from{height:0}to{height:100%}}
+  .water .hint{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-top:10px;}
+
+  /* Rules card */
+  details.rules{border:1.5px solid var(--line);background:var(--card);margin-top:26px;}
+  details.rules summary{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);padding:14px 16px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-weight:600;}
+  details.rules summary::-webkit-details-marker{display:none;}
+  details.rules summary .chev{transition:transform .2s;color:var(--gold);}
+  details.rules[open] summary .chev{transform:rotate(90deg);}
+  .rules-body{padding:2px 16px 18px;border-top:1px solid var(--line);}
+  .rules-body h3{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin:16px 0 7px;}
+  .rules-body p,.rules-body li{font-size:13px;line-height:1.5;color:var(--ink);}
+  .rules-body ul{list-style:none;}
+  .rules-body li{padding-left:16px;position:relative;margin-bottom:4px;}
+  .rules-body li::before{content:"—";position:absolute;left:0;color:var(--gold);}
+  .rules-body .ok{color:var(--blue);font-weight:600;}
+  .rules-body .no{color:#a23b2d;font-weight:600;}
+
+  /* Footer actions */
+  .foot{display:flex;gap:9px;margin-top:24px;}
+  .btn{flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:13px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;font-weight:600;transition:background .15s,color .15s;}
+  .btn:active{transform:scale(.98);}
+  .btn.reset:hover{background:#a23b2d;color:var(--paper);border-color:#a23b2d;}
+  .btn.done-day:hover{background:var(--blue);color:var(--paper);border-color:var(--blue);}
+
+  .alldone{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:19px;color:var(--blue);margin-top:20px;opacity:0;height:0;overflow:hidden;transition:opacity .4s;}
+  .alldone.show{opacity:1;height:auto;margin-top:22px;}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+</head>
+<body>
+  <div class="mast">
+    <div class="kicker"><span>The Daily Standard</span><span class="day" id="weekday">—</span></div>
+    <h1>Day <em id="dayNum">1</em></h1>
+    <div class="date" id="fullDate">—</div>
+  </div>
+
+  <div class="strip">
+    <div class="cell"><div class="num" id="streak">0</div><div class="lbl">Streak</div></div>
+    <div class="cell"><div class="num" id="best">0</div><div class="lbl">Best</div></div>
+    <div class="cell"><div class="num" id="workoutType">IN</div><div class="lbl">Today's Workout</div></div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-top"><span>Today's completion</span><b id="pctText">0%</b></div>
+    <div class="prog"><span id="progFill"></span></div>
+  </div>
+
+  <div class="sec">The Non-Negotiables</div>
+  <div id="taskList"></div>
+
+  <div class="alldone" id="allDone">Clean day. That's how the streak gets built.</div>
+
+  <details class="rules">
+    <summary>My Rules <span class="chev">›</span></summary>
+    <div class="rules-body">
+      <h3>The Program</h3>
+      <ul>
+        <li>One 90-minute workout daily, alternating indoor and outdoor day to day</li>
+        <li>Read 5 pages plus 10 Bible verses</li>
+        <li>Follow the diet, no cheats</li>
+        <li>Daily progress photo</li>
+        <li>Drink a gallon of water</li>
+      </ul>
+      <h3>The Sugar Rule</h3>
+      <p>No added sugar. Nothing with sugar or any sugar equivalent in the ingredients, and nothing showing added sugar on the label. No fruit juice. <span class="ok">Whole fruit and plain unsweetened dairy allowed.</span> Check the label on anything packaged before it goes in your mouth.</p>
+      <h3>What I Can Drink</h3>
+      <ul>
+        <li><span class="ok">Water</span> — plain or with lemon, lime, cucumber, mint</li>
+        <li><span class="ok">Sparkling water</span> — 0g sugar, no sweetener in ingredients</li>
+        <li><span class="ok">Coffee</span> — black or with plain unsweetened milk</li>
+        <li><span class="ok">Tea</span> — unsweetened, any kind</li>
+        <li><span class="ok">Plain unsweetened milk</span> — dairy or plant (check the label)</li>
+        <li><span class="ok">Zero-sugar sodas</span> — Coke Zero, Diet Coke, 0g sugar</li>
+      </ul>
+      <h3>Watch These</h3>
+      <ul>
+        <li><span class="no">Fruit juice</span> — even 100%, no added sugar. Eat the fruit, don't drink it.</li>
+        <li><span class="no">Kombucha</span> — usually has added sugar</li>
+        <li><span class="no">Flavored plant milk</span> — often sweetened</li>
+        <li><span class="no">Anything labeled "beer," tonic, or lemonade</span> — sugar hides here</li>
+      </ul>
+      <p style="margin-top:14px;font-style:italic;color:var(--dim);">If you have to ask whether something counts, it counts.</p>
+    </div>
+  </details>
+
+  <div class="foot">
+    <button class="btn done-day" id="lockBtn">Lock in the day</button>
+    <button class="btn reset" id="resetBtn">Reset today</button>
+  </div>
+
+<script>
+const TASKS = [
+  {id:'workout', t:'90-Minute Workout', d:'One session. Take your progress photo right after.', tag:null, dynamicTag:true},
+  {id:'reading', t:'Read 5 Pages + 10 Bible Verses', d:'Both count. Physical pages, not audio.'},
+  {id:'diet', t:'Diet Held — No Cheats', d:'No added sugar, no juice. Label-checked everything.'},
+  {id:'photo', t:'Progress Photo', d:'Same framing daily so the change is visible.'},
+];
+const START = '2026-07-27'; // Day 1
+
+function todayKey(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+function dayNumber(){
+  const s=new Date(START+'T00:00:00'), n=new Date(todayKey()+'T00:00:00');
+  return Math.max(1, Math.floor((n-s)/86400000)+1);
+}
+function workoutIsIndoor(){
+  // Day 1 (Jul 27) = indoor, alternating daily
+  return (dayNumber()%2)===1;
+}
+
+let state={tasks:{},water:0};
+const $=s=>document.querySelector(s);
+
+async function load(){
+  try{
+    const r=await window.storage.get('day:'+todayKey());
+    if(r&&r.value){state=JSON.parse(r.value);}
+  }catch(e){/* fresh day */}
+  if(!state.tasks)state.tasks={};
+  if(typeof state.water!=='number')state.water=0;
+}
+async function save(){
+  try{await window.storage.set('day:'+todayKey(),JSON.stringify(state));}catch(e){}
+}
+async function loadStreaks(){
+  let streak=0,best=0;
+  try{const b=await window.storage.get('meta:best');if(b&&b.value)best=parseInt(b.value)||0;}catch(e){}
+  // count back from today while days are complete
+  let d=new Date(todayKey()+'T00:00:00');
+  for(let i=0;i<400;i++){
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    let done=false;
+    try{const r=await window.storage.get('locked:'+k);if(r&&r.value==='1')done=true;}catch(e){}
+    if(done){streak++;d.setDate(d.getDate()-1);}else{break;}
+  }
+  $('#streak').textContent=streak;
+  if(streak>best){best=streak;try{await window.storage.set('meta:best',String(best));}catch(e){}}
+  $('#best').textContent=best;
+}
+
+function allComplete(){
+  return TASKS.every(t=>state.tasks[t.id]) && state.water>=8;
+}
+
+function render(){
+  const dn=dayNumber();
+  $('#dayNum').textContent=dn;
+  const wd=new Date(todayKey()+'T00:00:00');
+  $('#weekday').textContent=wd.toLocaleDateString('en-US',{weekday:'long'});
+  $('#fullDate').textContent=wd.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const indoor=workoutIsIndoor();
+  $('#workoutType').textContent=indoor?'IN':'OUT';
+
+  const list=$('#taskList');list.innerHTML='';
+  TASKS.forEach(t=>{
+    const done=!!state.tasks[t.id];
+    const el=document.createElement('div');
+    el.className='task'+(done?' done':'');
+    let tagHtml='';
+    if(t.dynamicTag){tagHtml=`<span class="tag">${indoor?'Indoor day':'Outdoor day'}</span>`;}
+    else if(t.tag){tagHtml=`<span class="tag">${t.tag}</span>`;}
+    el.innerHTML=`
+      <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+      <div class="body">
+        <div class="t">${t.t}</div>
+        <div class="d">${t.d}</div>
+        ${tagHtml}
+      </div>`;
+    el.addEventListener('click',()=>{state.tasks[t.id]=!state.tasks[t.id];save();render();});
+    list.appendChild(el);
+  });
+
+  // Water
+  const water=document.createElement('div');
+  water.className='water';
+  let cups='';
+  for(let i=0;i<8;i++){cups+=`<div class="cup${i<state.water?' full':''}" data-i="${i}"></div>`;}
+  water.innerHTML=`
+    <div class="wtop"><span class="t">Gallon of Water</span><span class="count">${state.water}/8</span></div>
+    <div class="cups">${cups}</div>
+    <div class="hint">Tap a cup — each is roughly 16 oz</div>`;
+  list.appendChild(water);
+  water.querySelectorAll('.cup').forEach(c=>{
+    c.addEventListener('click',()=>{
+      const i=parseInt(c.dataset.i);
+      state.water = (i+1===state.water)? i : i+1;
+      save();render();
+    });
+  });
+
+  // progress
+  const total=TASKS.length+1;
+  let done=TASKS.filter(t=>state.tasks[t.id]).length + (state.water>=8?1:0);
+  const pct=Math.round(done/total*100);
+  $('#progFill').style.width=pct+'%';
+  $('#pctText').textContent=pct+'%';
+  $('#allDone').classList.toggle('show',allComplete());
+}
+
+$('#resetBtn').addEventListener('click',async()=>{
+  state={tasks:{},water:0};
+  try{await window.storage.delete('locked:'+todayKey());}catch(e){}
+  await save();await loadStreaks();render();
+});
+$('#lockBtn').addEventListener('click',async()=>{
+  if(!allComplete()){
+    $('#lockBtn').textContent='Finish everything first';
+    setTimeout(()=>{$('#lockBtn').textContent='Lock in the day';},1600);
+    return;
+  }
+  try{await window.storage.set('locked:'+todayKey(),'1');}catch(e){}
+  $('#lockBtn').textContent='Day locked ✓';
+  await loadStreaks();
+});
+
+(async()=>{await load();render();await loadStreaks();})();
+</script>
+</body>
+</html>
