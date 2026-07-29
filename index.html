@@ -189,30 +189,32 @@ function workoutIsIndoor(){
 let state={tasks:{},water:0};
 const $=s=>document.querySelector(s);
 
-async function load(){
-  try{
-    const r=await window.storage.get('day:'+todayKey());
-    if(r&&r.value){state=JSON.parse(r.value);}
-  }catch(e){/* fresh day */}
+const LS={
+  get(k){try{return localStorage.getItem('std:'+k);}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem('std:'+k,v);}catch(e){}},
+  del(k){try{localStorage.removeItem('std:'+k);}catch(e){}}
+};
+function load(){
+  const raw=LS.get('day:'+todayKey());
+  if(raw){try{state=JSON.parse(raw);}catch(e){state={tasks:{},water:0};}}
+  else{state={tasks:{},water:0};}
   if(!state.tasks)state.tasks={};
   if(typeof state.water!=='number')state.water=0;
 }
-async function save(){
-  try{await window.storage.set('day:'+todayKey(),JSON.stringify(state));}catch(e){}
+function save(){
+  LS.set('day:'+todayKey(),JSON.stringify(state));
 }
-async function loadStreaks(){
+function loadStreaks(){
   let streak=0,best=0;
-  try{const b=await window.storage.get('meta:best');if(b&&b.value)best=parseInt(b.value)||0;}catch(e){}
-  // count back from today while days are complete
+  const b=LS.get('meta:best');if(b)best=parseInt(b)||0;
+  // count back from today while days are locked complete
   let d=new Date(todayKey()+'T00:00:00');
   for(let i=0;i<400;i++){
     const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    let done=false;
-    try{const r=await window.storage.get('locked:'+k);if(r&&r.value==='1')done=true;}catch(e){}
-    if(done){streak++;d.setDate(d.getDate()-1);}else{break;}
+    if(LS.get('locked:'+k)==='1'){streak++;d.setDate(d.getDate()-1);}else{break;}
   }
   $('#streak').textContent=streak;
-  if(streak>best){best=streak;try{await window.storage.set('meta:best',String(best));}catch(e){}}
+  if(streak>best){best=streak;LS.set('meta:best',String(best));}
   $('#best').textContent=best;
 }
 
@@ -275,23 +277,23 @@ function render(){
   $('#allDone').classList.toggle('show',allComplete());
 }
 
-$('#resetBtn').addEventListener('click',async()=>{
+$('#resetBtn').addEventListener('click',()=>{
   state={tasks:{},water:0};
-  try{await window.storage.delete('locked:'+todayKey());}catch(e){}
-  await save();await loadStreaks();render();
+  LS.del('locked:'+todayKey());
+  save();loadStreaks();render();
 });
-$('#lockBtn').addEventListener('click',async()=>{
+$('#lockBtn').addEventListener('click',()=>{
   if(!allComplete()){
     $('#lockBtn').textContent='Finish everything first';
     setTimeout(()=>{$('#lockBtn').textContent='Lock in the day';},1600);
     return;
   }
-  try{await window.storage.set('locked:'+todayKey(),'1');}catch(e){}
+  LS.set('locked:'+todayKey(),'1');
   $('#lockBtn').textContent='Day locked ✓';
-  await loadStreaks();
+  loadStreaks();
 });
 
-(async()=>{await load();render();await loadStreaks();})();
+load();render();loadStreaks();
 </script>
 </body>
 </html>
