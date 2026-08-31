@@ -65,11 +65,14 @@
 
   /* Streak strip */
   .strip{display:grid;grid-template-columns:1fr 1fr 1fr;border:2px solid var(--line);margin-top:16px;background:var(--card);box-shadow:5px 5px 0 rgba(18,89,201,.16);}
-  .strip .cell{padding:14px 10px;text-align:center;border-right:1px solid var(--line);}
+  .strip.strip4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .strip.strip4 .num{font-size:27px;}
+  .strip .cell{padding:14px 8px;text-align:center;border-right:1px solid var(--line);}
   .strip .cell:last-child{border-right:none;}
   .strip .num{font-family:'Fraunces',serif;font-weight:900;font-size:32px;line-height:1;color:var(--blue);}
   .strip .cell:nth-child(2) .num{background:linear-gradient(120deg,var(--gold),var(--coral));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-  .strip .lbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:5px;}
+  .strip .cell:nth-child(3) .num{color:var(--dim);}
+  .strip .lbl{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-top:5px;}
 
   /* Progress bar */
   .prog-wrap{margin:18px 0 6px;}
@@ -150,6 +153,8 @@
   .btn.reset:hover{background:var(--coral);color:#fff;border-color:var(--coral);}
   .btn.done-day{background:linear-gradient(120deg,var(--blue),var(--blue-bright));color:#fff;border-color:var(--blue);box-shadow:4px 4px 0 rgba(240,165,30,.35);}
   .btn.done-day:hover{filter:brightness(1.08);}
+  .btn.restart{width:100%;margin-top:9px;background:var(--card);color:var(--dim);border-style:dashed;}
+  .btn.restart:hover{color:var(--coral);border-color:var(--coral);}
 
   .alldone{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:20px;background:linear-gradient(120deg,var(--blue),var(--coral));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-top:20px;opacity:0;height:0;overflow:hidden;transition:opacity .4s;}
   .alldone.show{opacity:1;height:auto;margin-top:22px;}
@@ -176,10 +181,11 @@
     <div class="hist" id="hist"></div>
   </div>
 
-  <div class="strip">
+  <div class="strip strip4">
     <div class="cell"><div class="num" id="streak">0</div><div class="lbl">Streak</div></div>
     <div class="cell"><div class="num" id="best">0</div><div class="lbl">Best</div></div>
-    <div class="cell"><div class="num" id="workoutType">IN</div><div class="lbl">Today's Workout</div></div>
+    <div class="cell"><div class="num" id="prevBest">0</div><div class="lbl">Attempt 1</div></div>
+    <div class="cell"><div class="num" id="workoutType">IN</div><div class="lbl">Workout</div></div>
   </div>
 
   <div class="prog-wrap">
@@ -210,12 +216,15 @@
     <div class="rules-body">
       <h3>The Program</h3>
       <ul>
-        <li>One 90-minute workout daily, alternating indoor and outdoor day to day</li>
+        <li>One workout daily of 60 to 90 minutes, alternating indoor and outdoor day to day</li>
         <li>Read 5 pages plus 10 Bible verses</li>
         <li>Follow the diet, no cheats</li>
+        <li>No fast food</li>
         <li>Daily progress photo</li>
         <li>Drink a gallon of water</li>
       </ul>
+      <h3>The No Fast Food Rule</h3>
+      <p>No drive-thru or fast-food counter meals. This covers places like <span class="no">McDonald's, Burger King, Wendy's, Taco Bell, KFC, Popeyes, Chick-fil-A, Checkers, White Castle, Subway, Domino's, Pizza Hut, and 7-Eleven hot-case food.</span> A sit-down meal or something you cook or assemble yourself is fine. If it comes from a fast-food chain window or counter, it breaks the day.</p>
       <h3>The Sugar Rule</h3>
       <p>No added sugar. Nothing with sugar or any sugar equivalent in the ingredients, and nothing showing added sugar on the label. No fruit juice. <span class="ok">Whole fruit and plain unsweetened dairy allowed.</span> Check the label on anything packaged before it goes in your mouth.</p>
       <h3>What I Can Drink</h3>
@@ -242,12 +251,14 @@
     <button class="btn done-day" id="lockBtn">Lock in the day</button>
     <button class="btn reset" id="resetBtn">Reset today</button>
   </div>
+  <button class="btn restart" id="restartBtn">↺ Restart the challenge (new Day 1)</button>
 
 <script>
 const TASKS = [
-  {id:'workout', t:'90-Minute Workout', d:'One session. Take your progress photo right after.', tag:null, dynamicTag:true},
+  {id:'workout', t:'Workout (60–90 min)', d:'One session. Take your progress photo right after.', tag:null, dynamicTag:true},
   {id:'reading', t:'Read 5 Pages + 10 Bible Verses', d:'Both count. Physical pages, not audio.'},
   {id:'diet', t:'Diet Held — No Cheats', d:'No added sugar, no juice. Label-checked everything.'},
+  {id:'nofastfood', t:'No Fast Food', d:'No drive-thru or counter fast food today.'},
   {id:'photo', t:'Progress Photo', d:'Same framing daily so the change is visible.'},
 ];
 const TOTAL_DAYS = 75;
@@ -278,7 +289,10 @@ const QUOTES = [
   {t:"The only way out is through.", by:"Robert Frost"},
   {t:"Do not be conformed to this world, but be transformed by the renewal of your mind.", by:"Romans 12:2"},
 ];
-const START = '2026-07-27'; // Day 1
+const DEFAULT_START = '2026-08-31'; // Day 1 (restart — attempt 2)
+const ORIG_START = '2026-07-27'; // first attempt, used to preserve old best
+const LS0={ get(k){try{return localStorage.getItem('std:'+k);}catch(e){return null;} } };
+const START = LS0.get('meta:start') || DEFAULT_START;
 
 function keyOf(dateObj){
   return dateObj.getFullYear()+'-'+String(dateObj.getMonth()+1).padStart(2,'0')+'-'+String(dateObj.getDate()).padStart(2,'0');
@@ -318,6 +332,31 @@ function save(){
 }
 function isLocked(key){ return LS.get('locked:'+key)==='1'; }
 
+function bestInRange(fromKey, toKey){
+  // longest run of locked days between fromKey and toKey inclusive
+  let best=0,run=0,d=fromKey;
+  for(let i=0;i<800;i++){
+    if(isLocked(d)){run++;if(run>best)best=run;}else{run=0;}
+    if(d===toKey)break;
+    d=addDays(d,1);
+  }
+  return best;
+}
+function archivePrevBestOnce(){
+  // On first run after a restart, capture attempt 1's best (ORIG_START .. day before START)
+  const KNOWN_ATTEMPT1_BEST = 32; // user-confirmed best from first attempt
+  const existing = LS.get('meta:prevBest');
+  if(existing!==null){
+    // never let it drop below the known real value
+    if((parseInt(existing)||0) < KNOWN_ATTEMPT1_BEST) LS.set('meta:prevBest', String(KNOWN_ATTEMPT1_BEST));
+    return;
+  }
+  if(START===ORIG_START) return; // no prior attempt yet
+  const dayBefore = addDays(START,-1);
+  const computed = bestInRange(ORIG_START, dayBefore);
+  LS.set('meta:prevBest', String(Math.max(computed, KNOWN_ATTEMPT1_BEST)));
+}
+
 function computeStreaks(){
   // Current streak: consecutive locked days ending at today; today not-yet-locked doesn't break it.
   let cur=0;
@@ -326,20 +365,16 @@ function computeStreaks(){
   for(let i=0;i<800;i++){
     if(isLocked(k)){cur++;k=addDays(k,-1);}else{break;}
   }
-  // Longest streak across all history since START
-  let best=0,run=0,d=START;
-  const end=todayKey();
-  for(let i=0;i<800;i++){
-    if(isLocked(d)){run++;if(run>best)best=run;}else{run=0;}
-    if(d===end)break;
-    d=addDays(d,1);
-  }
+  // Longest streak in the current attempt (since START)
+  const best = bestInRange(START, todayKey());
   return {cur,best};
 }
 function loadStreaks(){
   const {cur,best}=computeStreaks();
   $('#streak').textContent=cur;
   $('#best').textContent=best;
+  const pb=LS.get('meta:prevBest');
+  $('#prevBest').textContent = (pb!==null? pb : '0');
 }
 
 function allComplete(){
@@ -494,6 +529,24 @@ $('#lockBtn').addEventListener('click',()=>{
   render();
 });
 
+$('#restartBtn').addEventListener('click',()=>{
+  const btn=$('#restartBtn');
+  if(btn.dataset.confirm!=='1'){
+    btn.dataset.confirm='1';
+    btn.textContent='Tap again to confirm restart';
+    setTimeout(()=>{ btn.dataset.confirm='0'; btn.textContent='↺ Restart the challenge (new Day 1)'; },3500);
+    return;
+  }
+  // Archive the best of the run that just ended, into prevBest (keep the higher of the two)
+  const endedBest = bestInRange(START, todayKey());
+  const priorPB = parseInt(LS.get('meta:prevBest')||'0')||0;
+  LS.set('meta:prevBest', String(Math.max(endedBest, priorPB)));
+  // Set today as the new start; reload so START picks it up
+  LS.set('meta:start', todayKey());
+  location.reload();
+});
+
+archivePrevBestOnce();
 load();render();
 </script>
 </body>
