@@ -224,7 +224,7 @@
         <li>Drink a gallon of water</li>
       </ul>
       <h3>The No Fast Food Rule</h3>
-      <p>No drive-thru or fast-food counter meals. This covers places like <span class="no">McDonald's, Burger King, Wendy's, Taco Bell, KFC, Popeyes, Chick-fil-A, Checkers, White Castle, Subway, Domino's, Pizza Hut, and 7-Eleven hot-case food.</span> A sit-down meal or something you cook or assemble yourself is fine. If it comes from a fast-food chain window or counter, it breaks the day.</p>
+      <p>No fast-food chains. This covers places like <span class="no">McDonald's, Burger King, Wendy's, Taco Bell, KFC, Popeyes, Chick-fil-A, Checkers, White Castle, Subway, Domino's, and Pizza Hut.</span> A sit-down meal, a convenience-store item, or something you cook or assemble yourself is fine. If it comes from a fast-food chain, it breaks the day.</p>
       <h3>The Sugar Rule</h3>
       <p>No added sugar. Nothing with sugar or any sugar equivalent in the ingredients, and nothing showing added sugar on the label. No fruit juice. <span class="ok">Whole fruit and plain unsweetened dairy allowed.</span> Check the label on anything packaged before it goes in your mouth.</p>
       <h3>What I Can Drink</h3>
@@ -258,7 +258,7 @@ const TASKS = [
   {id:'workout', t:'Workout (60–90 min)', d:'One session. Take your progress photo right after.', tag:null, dynamicTag:true},
   {id:'reading', t:'Read 5 Pages + 10 Bible Verses', d:'Both count. Physical pages, not audio.'},
   {id:'diet', t:'Diet Held — No Cheats', d:'No added sugar, no juice. Label-checked everything.'},
-  {id:'nofastfood', t:'No Fast Food', d:'No drive-thru or counter fast food today.'},
+  {id:'nofastfood', t:'No Fast Food', d:'No fast-food chains today.'},
   {id:'photo', t:'Progress Photo', d:'Same framing daily so the change is visible.'},
 ];
 const TOTAL_DAYS = 75;
@@ -349,12 +349,24 @@ function archivePrevBestOnce(){
   if(existing!==null){
     // never let it drop below the known real value
     if((parseInt(existing)||0) < KNOWN_ATTEMPT1_BEST) LS.set('meta:prevBest', String(KNOWN_ATTEMPT1_BEST));
-    return;
+  } else if(START!==ORIG_START){
+    const dayBefore = addDays(START,-1);
+    const computed = bestInRange(ORIG_START, dayBefore);
+    LS.set('meta:prevBest', String(Math.max(computed, KNOWN_ATTEMPT1_BEST)));
   }
-  if(START===ORIG_START) return; // no prior attempt yet
-  const dayBefore = addDays(START,-1);
-  const computed = bestInRange(ORIG_START, dayBefore);
-  LS.set('meta:prevBest', String(Math.max(computed, KNOWN_ATTEMPT1_BEST)));
+}
+function seedCurrentStreakOnce(){
+  // One-time safety net: guarantee the confirmed locked days of attempt 2 exist,
+  // so re-uploading the page can never cost the streak already earned.
+  if(LS.get('meta:seededStreak')==='1') return;
+  const CONFIRMED_THROUGH = '2026-09-09'; // Days 1..10 locked (Aug 31 - Sep 9)
+  let d = START;
+  for(let i=0;i<400;i++){
+    LS.set('locked:'+d,'1');
+    if(d===CONFIRMED_THROUGH) break;
+    d = addDays(d,1);
+  }
+  LS.set('meta:seededStreak','1');
 }
 
 function computeStreaks(){
@@ -472,10 +484,11 @@ function render(){
   water.className='water';
   let cups='';
   for(let i=0;i<8;i++){cups+=`<div class="cup${i<state.water?' full':''}" data-i="${i}"></div>`;}
+  const floz=(state.water*16.9).toFixed(1).replace(/\.0$/,'');
   water.innerHTML=`
     <div class="wtop"><span class="t">Gallon of Water</span><span class="count">${state.water}/8</span></div>
     <div class="cups">${cups}</div>
-    <div class="hint">Tap a cup — each is roughly 16 oz</div>`;
+    <div class="hint">Tap a bottle — each is 16.9 fl oz · ${floz} fl oz today</div>`;
   list.appendChild(water);
   water.querySelectorAll('.cup').forEach(c=>{
     c.addEventListener('click',()=>{
