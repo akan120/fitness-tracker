@@ -9,7 +9,7 @@
 
   :root{
     --ink:#0b1a2e;
-    --paper:#eef4fb;
+    --paper:#ffffff;
     --card:#ffffff;
     --line:#123a6b;
     --blue:#1259c9;
@@ -27,6 +27,23 @@
     radial-gradient(900px 380px at -10% 4%, rgba(240,165,30,.14), transparent 55%),
     var(--paper);}
 
+  :root{color-scheme:light;}
+  :root[data-theme="dark"]{color-scheme:dark;--ink:#e8eef8;--paper:#0b1019;--card:#141d2b;--line:#364c68;--blue:#82b1ff;--blue-bright:#528fff;--gold:#ffc365;--coral:#ff8c80;--dim:#a5b4c9;}
+  body{min-height:100vh;background:var(--paper);transition:background .3s,color .3s;}
+  .countdown,.btn.done-day{background:linear-gradient(120deg,#1259c9,#286ce0);}
+  .hist .hd.locked{background:#1259c9;}
+  .hist .hd.locked .dow,.hist .hd.locked .dnum{color:#fff;}
+  [data-theme="dark"] .rules-body .no{color:#ff9b8c;}
+  .preferences{margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card);}
+  .pref-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .pref-row label{font-size:13px;font-weight:600;}
+  select{font:inherit;font-size:13px;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:8px;border-radius:6px;}
+  .small-note{font-size:12px;line-height:1.5;color:var(--dim);margin-top:9px;}
+  .small-btn{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);padding:9px 12px;cursor:pointer;margin-top:9px;}
+  button:focus-visible,select:focus-visible,[role="checkbox"]:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
+  .reminder-banner{position:sticky;bottom:12px;z-index:10;background:var(--card);border:2px solid var(--gold);border-radius:12px;padding:16px;margin-top:20px;box-shadow:0 8px 35px #0003;}
+  .reminder-banner[hidden]{display:none;}
+  .reminder-banner p{font-size:13px;line-height:1.5;margin-top:6px;color:var(--dim);}
   /* Masthead */
   .mast{border-bottom:3px solid var(--line);padding-bottom:14px;margin-bottom:4px;}
   .kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;align-items:center;}
@@ -176,6 +193,11 @@
     <button class="todaybtn" id="todayBtn">Jump to today</button>
   </div>
 
+  <section class="preferences" aria-label="Appearance">
+    <div class="pref-row"><label for="themeMode">Appearance</label><select id="themeMode"><option value="auto">Sunrise &amp; sunset</option><option value="light">Always light</option><option value="dark">Always dark</option></select></div>
+    <p class="small-note" id="sunStatus"></p>
+    <button class="small-btn" id="useLocation">Use my location</button>
+  </section>
   <div class="histwrap">
     <div class="histlabel">Last 14 days — tap any to open</div>
     <div class="hist" id="hist"></div>
@@ -184,8 +206,8 @@
   <div class="strip strip4">
     <div class="cell"><div class="num" id="streak">0</div><div class="lbl">Streak</div></div>
     <div class="cell"><div class="num" id="best">0</div><div class="lbl">Best</div></div>
-    <div class="cell"><div class="num" id="prevBest">0</div><div class="lbl">Attempt 1</div></div>
-    <div class="cell"><div class="num" id="workoutType">IN</div><div class="lbl">Workout</div></div>
+    <div class="cell"><div class="num" id="prevBest">0</div><div class="lbl">Prev Best</div></div>
+    <div class="cell"><div class="num" id="dayPct">0%</div><div class="lbl">Through 75</div></div>
   </div>
 
   <div class="prog-wrap">
@@ -204,20 +226,62 @@
     <div class="q-text" id="qText">—</div>
     <div class="q-by" id="qBy">—</div>
     <button class="q-new" id="qNew" aria-label="New quote">↻ Another</button>
+    <button class="q-new" id="quotePause" aria-pressed="false">Pause rotation</button>
+    <div class="small-note">A fresh thought every 30 seconds.</div>
   </div>
 
   <div class="sec">The Non-Negotiables</div>
-  <div id="taskList"></div>
+  <div id="taskList">
+    <div class="task" role="checkbox" aria-checked="false" tabindex="0">
+      <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+      <div class="body"><div class="t">Workout (60–90 min)</div><div class="d">One session, indoor or outdoor — your choice. Take your progress photo right after.</div></div>
+    </div>
+    <div class="task" role="checkbox" aria-checked="false" tabindex="0">
+      <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+      <div class="body"><div class="t">Read 5 Pages</div><div class="d">Physical pages, not audio.</div></div>
+    </div>
+    <div class="task" role="checkbox" aria-checked="false" tabindex="0">
+      <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+      <div class="body"><div class="t">Read 10 Bible Verses</div><div class="d">Scripture — separate from the 5 pages.</div></div>
+    </div>
+    <div class="task" role="checkbox" aria-checked="false" tabindex="0">
+      <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+      <div class="body"><div class="t">Diet Held — No Cheats</div><div class="d">No added sugar, no juice. Label-checked everything.</div></div>
+    </div>
+    <div class="task" role="checkbox" aria-checked="false" tabindex="0">
+      <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+      <div class="body"><div class="t">No Fast Food</div><div class="d">No fast-food chains today.</div></div>
+    </div>
+    <div class="task" role="checkbox" aria-checked="false" tabindex="0">
+      <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+      <div class="body"><div class="t">Progress Photo</div><div class="d">Same framing daily so the change is visible.</div></div>
+    </div>
+    <div class="water">
+      <div class="wtop"><span class="t">Gallon of Water</span><span class="count">0/8</span></div>
+      <div class="cups"><div class="cup" data-i="0"></div><div class="cup" data-i="1"></div><div class="cup" data-i="2"></div><div class="cup" data-i="3"></div><div class="cup" data-i="4"></div><div class="cup" data-i="5"></div><div class="cup" data-i="6"></div><div class="cup" data-i="7"></div></div>
+      <div class="hint">Tap a bottle — each is 16.9 fl oz · 0 fl oz today</div>
+    </div>
+  </div>
+  <noscript><p class="small-note">Open your GitHub Pages link in Safari to check off tasks and save progress.</p></noscript>
 
   <div class="alldone" id="allDone">Clean day. That's how the streak gets built.</div>
 
+  <section class="preferences" aria-label="Evening check-in">
+    <div class="pref-row"><label for="reminderEnabled">9:30 PM check-in</label><input type="checkbox" id="reminderEnabled"></div>
+    <p class="small-note">Every evening in your device’s local time. Repeats every 5 minutes until you tap the notification, acknowledge the check-in, or finish every task. Stops at midnight.</p>
+    <p class="small-note">Keep this tracker open and your device awake. Closed-page and lock-screen reminders require a hosted push-notification setup.</p>
+    <button class="small-btn" id="enableNotifications">Enable browser notifications</button>
+    <button class="small-btn" id="testReminder">Test reminder</button>
+    <p class="small-note" id="notificationStatus" role="status"></p>
+  </section>
   <details class="rules">
     <summary>My Rules <span class="chev">›</span></summary>
     <div class="rules-body">
       <h3>The Program</h3>
       <ul>
-        <li>One workout daily of 60 to 90 minutes, alternating indoor and outdoor day to day</li>
-        <li>Read 5 pages plus 10 Bible verses</li>
+        <li>One workout daily of 60 to 90 minutes, indoor or outdoor at your discretion</li>
+        <li>Read 5 pages</li>
+        <li>Read 10 Bible verses</li>
         <li>Follow the diet, no cheats</li>
         <li>No fast food</li>
         <li>Daily progress photo</li>
@@ -253,10 +317,16 @@
   </div>
   <button class="btn restart" id="restartBtn">↺ Restart the challenge (new Day 1)</button>
 
+<aside class="reminder-banner" id="reminderBanner" role="status" hidden>
+  <strong id="reminderTitle">Time for your evening check-in</strong>
+  <p id="reminderBody"></p>
+  <button class="small-btn" id="ackReminder">Review today &amp; stop tonight’s reminders</button>
+</aside>
 <script>
 const TASKS = [
-  {id:'workout', t:'Workout (60–90 min)', d:'One session. Take your progress photo right after.', tag:null, dynamicTag:true},
-  {id:'reading', t:'Read 5 Pages + 10 Bible Verses', d:'Both count. Physical pages, not audio.'},
+  {id:'workout', t:'Workout (60–90 min)', d:'One session, indoor or outdoor — your choice. Take your progress photo right after.'},
+  {id:'reading', t:'Read 5 Pages', d:'Physical pages, not audio.'},
+  {id:'bible', t:'Read 10 Bible Verses', d:'Scripture — separate from the 5 pages.'},
   {id:'diet', t:'Diet Held — No Cheats', d:'No added sugar, no juice. Label-checked everything.'},
   {id:'nofastfood', t:'No Fast Food', d:'No fast-food chains today.'},
   {id:'photo', t:'Progress Photo', d:'Same framing daily so the change is visible.'},
@@ -264,6 +334,30 @@ const TASKS = [
 const TOTAL_DAYS = 75;
 
 const QUOTES = [
+{t:"You do not have to finish the whole journey today. Finish today.",by:"The Daily Standard · Original"},
+{t:"Keep the promise you made when you felt ready.",by:"The Daily Standard · Original"},
+{t:"One honest effort is worth more than a perfect plan left untouched.",by:"The Daily Standard · Original"},
+{t:"Make room for prayer, then take the next step.",by:"The Daily Standard · Original"},
+{t:"The next small choice still matters.",by:"The Daily Standard · Original"},
+{t:"Let your actions catch up with your intentions.",by:"The Daily Standard · Original"},
+{t:"Consistency grows each time you begin again.",by:"The Daily Standard · Original"},
+{t:"Today deserves your attention, not tomorrow\u2019s worry.",by:"The Daily Standard · Original"},
+{t:"Do the work at the pace you can sustain.",by:"The Daily Standard · Original"},
+{t:"Faith can steady you while the work stretches you.",by:"The Daily Standard · Original"},
+{t:"You can have a difficult day and still make a good choice.",by:"The Daily Standard · Original"},
+{t:"Your progress does not need an audience.",by:"The Daily Standard · Original"},
+{t:"Give this day an effort you can be honest about.",by:"The Daily Standard · Original"},
+{t:"Begin with what is in front of you.",by:"The Daily Standard · Original"},
+{t:"Keep showing up for the person you are becoming.",by:"The Daily Standard · Original"},
+{t:"When motivation is quiet, let your routine speak.",by:"The Daily Standard · Original"},
+{t:"Take the photo. Read the pages. Give yourself evidence.",by:"The Daily Standard · Original"},
+{t:"Bring your worries to God and your attention to today.",by:"The Daily Standard · Original"},
+{t:"You are building a practice, one ordinary day at a time.",by:"The Daily Standard · Original"},
+{t:"Leave room for gratitude along the way.",by:"The Daily Standard · Original"},
+{t:"Finish the next task before negotiating with the whole list.",by:"The Daily Standard · Original"},
+{t:"A checked box is a small promise kept.",by:"The Daily Standard · Original"},
+{t:"Choose patience with your progress and honesty with your effort.",by:"The Daily Standard · Original"},
+{t:"The work you do quietly still counts.",by:"The Daily Standard · Original"},
   {t:"I can do all things through Christ who strengthens me.", by:"Philippians 4:13"},
   {t:"Whatever you do, work heartily, as for the Lord and not for men.", by:"Colossians 3:23"},
   {t:"We are what we repeatedly do. Excellence, then, is not an act but a habit.", by:"Will Durant"},
@@ -289,7 +383,8 @@ const QUOTES = [
   {t:"The only way out is through.", by:"Robert Frost"},
   {t:"Do not be conformed to this world, but be transformed by the renewal of your mind.", by:"Romans 12:2"},
 ];
-const DEFAULT_START = '2026-08-31'; // Day 1 (restart — attempt 2)
+const DEFAULT_START = '2026-10-02'; // Day 1 (restart — attempt 3, forced below)
+const FORCE_RESTART_TO = '2026-10-02'; // one-time: make this the new Day 1 on first load
 const ORIG_START = '2026-07-27'; // first attempt, used to preserve old best
 const LS0={ get(k){try{return localStorage.getItem('std:'+k);}catch(e){return null;} } };
 const START = LS0.get('meta:start') || DEFAULT_START;
@@ -300,11 +395,7 @@ function keyOf(dateObj){
 function todayKey(){ return keyOf(new Date()); }
 function dayNumber(key){
   const s=new Date(START+'T00:00:00'), n=new Date(key+'T00:00:00');
-  return Math.max(1, Math.floor((n-s)/86400000)+1);
-}
-function workoutIsIndoor(key){
-  // Day 1 (Jul 27) = indoor, alternating daily
-  return (dayNumber(key)%2)===1;
+  return Math.max(1, Math.round((n-s)/86400000)+1);
 }
 function addDays(key,n){
   const d=new Date(key+'T00:00:00'); d.setDate(d.getDate()+n); return keyOf(d);
@@ -342,6 +433,20 @@ function bestInRange(fromKey, toKey){
   }
   return best;
 }
+function forceRestartOnce(){
+  // One-time: on the first load of this version, start a fresh attempt at FORCE_RESTART_TO.
+  // Archives the best of the attempt that just ended, then reloads so START picks up the new date.
+  // Returns true if a restart+reload was triggered (init should stop).
+  if(LS.get('meta:forcedRestart')===FORCE_RESTART_TO) return false;
+  const endedBest = bestInRange(START, addDays(FORCE_RESTART_TO,-1));
+  const priorPB = parseInt(LS.get('meta:prevBest')||'0')||0;
+  LS.set('meta:prevBest', String(Math.max(endedBest, priorPB, 32)));
+  LS.set('meta:start', FORCE_RESTART_TO);
+  LS.set('meta:forcedRestart', FORCE_RESTART_TO);
+  location.reload();
+  return true;
+}
+
 function archivePrevBestOnce(){
   // On first run after a restart, capture attempt 1's best (ORIG_START .. day before START)
   const KNOWN_ATTEMPT1_BEST = 32; // user-confirmed best from first attempt
@@ -355,20 +460,6 @@ function archivePrevBestOnce(){
     LS.set('meta:prevBest', String(Math.max(computed, KNOWN_ATTEMPT1_BEST)));
   }
 }
-function seedCurrentStreakOnce(){
-  // One-time safety net: guarantee the confirmed locked days of attempt 2 exist,
-  // so re-uploading the page can never cost the streak already earned.
-  if(LS.get('meta:seededStreak')==='1') return;
-  const CONFIRMED_THROUGH = '2026-09-09'; // Days 1..10 locked (Aug 31 - Sep 9)
-  let d = START;
-  for(let i=0;i<400;i++){
-    LS.set('locked:'+d,'1');
-    if(d===CONFIRMED_THROUGH) break;
-    d = addDays(d,1);
-  }
-  LS.set('meta:seededStreak','1');
-}
-
 function computeStreaks(){
   // Current streak: consecutive locked days ending at today; today not-yet-locked doesn't break it.
   let cur=0;
@@ -450,8 +541,7 @@ function render(){
   const wd=new Date(viewKey+'T00:00:00');
   $('#weekday').textContent=wd.toLocaleDateString('en-US',{weekday:'long'});
   $('#fullDate').textContent=wd.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  const indoor=workoutIsIndoor(viewKey);
-  $('#workoutType').textContent=indoor?'IN':'OUT';
+  $('#dayPct').textContent = Math.min(100, Math.round(dayNumber(viewKey)/TOTAL_DAYS*100))+'%';
 
   // nav state
   $('#nextDay').disabled = isToday || isFuture;
@@ -465,9 +555,10 @@ function render(){
     const done=!!state.tasks[t.id];
     const el=document.createElement('div');
     el.className='task'+(done?' done':'');
+    el.tabIndex=0; el.setAttribute('role','checkbox'); el.setAttribute('aria-checked',String(done));
+    el.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();el.click();}});
     let tagHtml='';
-    if(t.dynamicTag){tagHtml=`<span class="tag">${indoor?'Indoor day':'Outdoor day'}</span>`;}
-    else if(t.tag){tagHtml=`<span class="tag">${t.tag}</span>`;}
+    if(t.tag){tagHtml=`<span class="tag">${t.tag}</span>`;}
     el.innerHTML=`
       <div class="box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
       <div class="body">
@@ -475,7 +566,7 @@ function render(){
         <div class="d">${t.d}</div>
         ${tagHtml}
       </div>`;
-    el.addEventListener('click',()=>{state.tasks[t.id]=!state.tasks[t.id];save();render();});
+    el.addEventListener('click',()=>{state.tasks[t.id]=!state.tasks[t.id];save();render();checkReminder();});
     list.appendChild(el);
   });
 
@@ -494,7 +585,7 @@ function render(){
     c.addEventListener('click',()=>{
       const i=parseInt(c.dataset.i);
       state.water = (i+1===state.water)? i : i+1;
-      save();render();
+      save();render();checkReminder();
     });
   });
 
@@ -525,7 +616,7 @@ $('#todayBtn').addEventListener('click',()=>{ viewKey=todayKey();quoteIdx=null;l
 $('#resetBtn').addEventListener('click',()=>{
   state={tasks:{},water:0};
   LS.del('locked:'+viewKey);
-  save();render();
+  save();render();checkReminder();
 });
 $('#lockBtn').addEventListener('click',()=>{
   if(isLocked(viewKey)){        // toggle unlock
@@ -559,8 +650,117 @@ $('#restartBtn').addEventListener('click',()=>{
   location.reload();
 });
 
-archivePrevBestOnce();
+// Solar altitude, calculated locally. The standard -0.833° horizon includes refraction.
+function solarAltitude(now,lat,lon){
+  const rad=Math.PI/180, d=now.getTime()/86400000-10957.5;
+  const M=rad*(357.5291+0.98560028*d);
+  const L=M+rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M))+rad*102.9372+Math.PI;
+  const ob=rad*23.4397;
+  const dec=Math.asin(Math.sin(L)*Math.sin(ob));
+  const ra=Math.atan2(Math.sin(L)*Math.cos(ob),Math.cos(L));
+  const H=rad*(280.16+360.9856235*d+lon)-ra;
+  return Math.asin(Math.sin(lat*rad)*Math.sin(dec)+Math.cos(lat*rad)*Math.cos(dec)*Math.cos(H))/rad;
+}
+function getSunLocation(){
+  try{const p=JSON.parse(LS.get('prefs:location'));if(p&&Number.isFinite(p.lat)&&Number.isFinite(p.lon)&&Math.abs(p.lat)<=90&&Math.abs(p.lon)<=180)return p;}catch(e){}
+  return {lat:40.8,lon:-73.1,label:'Long Island (default)'};
+}
+function applyTheme(now=new Date()){
+  const p=getSunLocation();
+  const mode=LS.get('prefs:theme')||'auto';
+  const dark=mode==='dark'||(mode==='auto'&&solarAltitude(now,p.lat,p.lon)<-0.833);
+  document.documentElement.dataset.theme=dark?'dark':'light';
+  $('#themeMode').value=mode;
+  $('#sunStatus').textContent=mode==='auto'?`${dark?'Night':'Day'} palette · ${p.label}. Changes with the sun.`:'Manual appearance selected.';
+}
+let quotePaused=LS.get('prefs:quotePaused')==='1';
+let activeNotification=null;
+let reminderError='';
+function notificationStatus(){
+  const enabled=LS.get('prefs:reminders')==='1';
+  $('#reminderEnabled').checked=enabled;
+  let msg=!enabled?'Evening reminders are off.': 'In-page reminders are on while this tracker runs.';
+  if(enabled&&LS.get('reminder:ack:'+todayKey())==='1')msg='Tonight’s check-in acknowledged. Reminders resume tomorrow.';
+  else if(enabled&&dayIsComplete(todayKey()))msg='Everything is checked off today. No reminder needed.';
+  const supported='Notification' in window&&window.isSecureContext;
+  $('#enableNotifications').disabled=!supported;
+  if(!supported)msg+=' Browser notifications are unavailable here; the in-page check-in still works.';
+  else if(Notification.permission==='granted')msg+=' Browser permission granted; use Test reminder to verify delivery.';
+  else if(Notification.permission==='denied')msg+=' Browser notifications blocked. Change this site’s browser permission to enable them.';
+  if(reminderError)msg+=' '+reminderError;
+  $('#notificationStatus').textContent=msg;
+}
+function acknowledgeReminder(key=todayKey()){
+  LS.set('reminder:ack:'+key,'1');
+  $('#reminderBanner').hidden=true;
+  if(activeNotification){activeNotification.close();activeNotification=null;}
+  viewKey=todayKey();load();render();notificationStatus();
+  $('#taskList').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function showReminder(test=false,key=todayKey()){
+  const raw=LS.get('day:'+key);let s={tasks:{},water:0};
+  try{if(raw)s=JSON.parse(raw);}catch(e){}
+  const left=TASKS.filter(t=>!s.tasks?.[t.id]).length+(s.water>=8?0:1);
+  const body=left?`${left} item${left===1?'':'s'} still unchecked. Review today’s list.`:'Everything is checked off. You can lock in your day.';
+  $('#reminderTitle').textContent=test?'Test check-in':'Time for your evening check-in';
+  $('#reminderBody').textContent=body+(test?' This test does not change tonight’s schedule.':' Tap below to stop tonight’s reminders.');
+  $('#reminderBanner').hidden=false;
+  $('#ackReminder').textContent=test?'Close test':'Review today & stop tonight’s reminders';
+  $('#ackReminder').onclick=()=>{if(test){$('#reminderBanner').hidden=true;if(activeNotification)activeNotification.close();}else acknowledgeReminder(key);};
+  if('Notification' in window&&window.isSecureContext&&Notification.permission==='granted'){
+    try{
+      if(activeNotification)activeNotification.close();
+      const n=new Notification(test?'The Daily Standard · Test':'75 Hard · Evening check-in',{body,tag:'daily-standard-check-in',requireInteraction:true});
+      activeNotification=n;
+      n.onclick=()=>{window.focus();n.close();if(!test)acknowledgeReminder(key);};
+      reminderError='';
+    }catch(e){reminderError='This browser cannot send notifications from this file. In-page check-ins remain available.';}
+  }
+  notificationStatus();
+}
+function checkReminder(now=new Date()){
+  const key=keyOf(now),minutes=now.getHours()*60+now.getMinutes();
+  const stop=LS.get('prefs:reminders')!=='1'||minutes<1290||LS.get('reminder:ack:'+key)==='1'||dayIsComplete(key);
+  if(stop){$('#reminderBanner').hidden=true;if(activeNotification){activeNotification.close();activeNotification=null;}notificationStatus();return;}
+  const slot=Math.floor((minutes-1290)/5);
+  // A persistent slot prevents duplicate reminders on refresh or in another tab.
+  const last=Number(LS.get('reminder:last:'+key)??'-1');
+  if(slot>last){LS.set('reminder:last:'+key,String(slot));showReminder(false,key);}
+  notificationStatus();
+}
+function initEnhancements(){
+  if(LS.get('prefs:reminders')===null)LS.set('prefs:reminders','1');
+  applyTheme();notificationStatus();
+  $('#themeMode').onchange=e=>{LS.set('prefs:theme',e.target.value);applyTheme();};
+  $('#useLocation').onclick=()=>{
+    if(!navigator.geolocation){$('#sunStatus').textContent='Location is unavailable. Using Long Island for sunrise and sunset.';return;}
+    navigator.geolocation.getCurrentPosition(p=>{
+      LS.set('prefs:location',JSON.stringify({lat:p.coords.latitude,lon:p.coords.longitude,label:'Your saved location'}));applyTheme();
+    },()=>{$('#sunStatus').textContent='Location was not available. Keeping '+getSunLocation().label+'.';},{timeout:10000,maximumAge:3600000});
+  };
+  const pause=$('#quotePause');
+  function renderPause(){pause.textContent=quotePaused?'Resume rotation':'Pause rotation';pause.setAttribute('aria-pressed',String(quotePaused));}
+  renderPause();pause.onclick=()=>{quotePaused=!quotePaused;LS.set('prefs:quotePaused',quotePaused?'1':'0');renderPause();};
+  setInterval(()=>{if(!quotePaused&&!document.hidden){const cur=quoteIdx===null?(dayNumber(viewKey)-1)%QUOTES.length:quoteIdx;quoteIdx=(cur+1)%QUOTES.length;renderQuote();}},30000);
+  $('#reminderEnabled').onchange=e=>{LS.set('prefs:reminders',e.target.checked?'1':'0');checkReminder();};
+  $('#enableNotifications').onclick=async()=>{
+    try{const permission=await Notification.requestPermission();if(permission==='granted'){LS.set('prefs:reminders','1');showReminder(true);}}catch(e){reminderError='Could not enable browser notifications. In-page reminders are still available.';}
+    notificationStatus();
+  };
+  $('#testReminder').onclick=()=>showReminder(true);
+  let lastDay=todayKey();
+  function tick(){
+    const today=todayKey();if(today!==lastDay){if(viewKey===lastDay){viewKey=today;quoteIdx=null;load();}lastDay=today;render();}
+    applyTheme();checkReminder();
+  }
+  setInterval(tick,15000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
+  window.addEventListener('storage',()=>{load();render();tick();});
+  checkReminder();
+}
+
 load();render();
+initEnhancements();
 </script>
 </body>
 </html>
